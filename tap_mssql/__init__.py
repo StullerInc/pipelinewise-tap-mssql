@@ -73,7 +73,6 @@ STRING_TYPES = set(
 )
 
 BYTES_FOR_INTEGER_TYPE = {
-    "tinyint": 1,
     "smallint": 2,
     "mediumint": 3,
     "int": 4,
@@ -103,6 +102,12 @@ def schema_for_column(c):
 
     if data_type == "bit":
         result.type = ["null", "boolean"]
+
+    elif data_type == "tinyint":
+        # tinyint is unsigned 1 bit
+        result.type = ["null", "integer"]
+        result.minimum = 0
+        result.maximum = 255
 
     elif data_type in BYTES_FOR_INTEGER_TYPE:
         result.type = ["null", "integer"]
