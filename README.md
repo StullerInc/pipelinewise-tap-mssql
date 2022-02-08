@@ -413,6 +413,40 @@ This invocation extracts any data since (and including) the
 {"type": "STATE", "value": {"bookmarks": {"example_db-animals": {"replication_key": "id", "version": 1509135204169, "replication_key_value": 6}}, "currently_syncing": null}}
 ```
 
+## Development
+
+### Running Tests
+
+1. Install test dependencies:
+```bash
+python3 -m venv .venv
+. .venv/bin/activate
+pip install --upgrade pip
+pip install '.[test]' # or pip install -e '.[test]'
+```
+2. Running the unit tests:
+```bash
+pytest tests/unit
+```
+3. Running the unit tests with coverage:
+```bash
+coverage run -m pytest -vv --disable-pytest-warnings tests/unit && coverage report
+```
+
+### Running pylint
+
+1. Install test dependencies:
+```bash
+python3 -m venv .venv
+. .venv/bin/activate
+pip install --upgrade pip
+pip install '.[test]' # or pip install -e '.[test]'
+```
+2. Run pylint
+```bash
+pylint tap_mssql
+```
+
 ---
 
 Based on Stitch documentation

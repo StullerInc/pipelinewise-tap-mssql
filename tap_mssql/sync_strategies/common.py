@@ -14,14 +14,8 @@ from singer import utils
 LOGGER = singer.get_logger()
 
 
-def escape(string):
-    if "`" in string:
-        raise Exception(
-            "Can't escape identifier {} because it contains a double quote".format(
-                string
-            )
-        )
-    return '"' + string + '"'
+def escape(identifier: str) -> str:
+    return "[{}]".format(identifier.replace("]", "]]"))
 
 
 def set_schema_mapping(config, stream):
