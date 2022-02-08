@@ -1,20 +1,15 @@
 #!/usr/bin/env python3
 # pylint: disable=missing-docstring,not-an-iterable,too-many-locals,too-many-arguments,too-many-branches,invalid-name,duplicate-code,too-many-statements
 
-import datetime
 import collections
 import itertools
-from itertools import dropwhile
-import json
 import logging
 import copy
-import uuid
 
 import singer
 import singer.metrics as metrics
 import singer.schema
 
-from singer import bookmarks
 from singer import metadata
 from singer import utils
 from singer.schema import Schema
@@ -25,10 +20,7 @@ import tap_mssql.sync_strategies.full_table as full_table
 import tap_mssql.sync_strategies.incremental as incremental
 import tap_mssql.sync_strategies.logical as logical
 
-from tap_mssql.connection import (
-    connect_with_backoff,
-    get_azure_sql_engine,
-)
+from tap_mssql.connection import get_azure_sql_engine
 
 
 Column = collections.namedtuple(
@@ -78,12 +70,13 @@ BYTES_FOR_INTEGER_TYPE = {
     "int": 4,
     "real": 4,
     "bigint": 8,
+    "timestamp": 8,
 }
 
 FLOAT_TYPES = set(["float", "double", "money"])
 
 DATETIME_TYPES = set(
-    ["datetime", "datetime2", "timestamp", "date", "time", "smalldatetime"]
+    ["datetime", "datetime2", "date", "smalldatetime", "datetimeoffset"]
 )
 
 VARIANT_TYPES = set(["json"])
@@ -127,6 +120,11 @@ def schema_for_column(c):
     elif data_type in STRING_TYPES:
         result.type = ["null", "string"]
         result.maxLength = c.character_maximum_length
+
+    elif data_type == "time":
+        # if 'time' is treated as DATETIME then a serialization error
+        # will occur downstream, serialize as string
+        result.type = ["null", "string"]
 
     elif data_type in DATETIME_TYPES:
         result.type = ["null", "string"]
