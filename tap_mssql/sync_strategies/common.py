@@ -6,6 +6,7 @@ import datetime
 import singer
 import time
 import uuid
+from typing import List
 
 import singer.metrics as metrics
 from singer import metadata
@@ -81,14 +82,29 @@ def get_key_properties(catalog_entry):
     return key_properties
 
 
+def map_sql_columns(catalog_entry, columns) -> List[str]:
+    md_map = metadata.to_map(catalog_entry.metadata)
+    mapped_columns = []
+    for idx, column in enumerate(columns):
+        property_type = md_map.get(("properties", columns[idx])).get("sql-datatype")
+        if property_type == "timestamp":
+            mapped_columns.append(
+                f"CAST({escape(column)} AS BIGINT) AS {escape(column)}"
+            )
+        else:
+            mapped_columns.append(escape(column))
+
+    return mapped_columns
+
+
 def generate_select_sql(catalog_entry, columns):
     database_name = get_database_name(catalog_entry)
     escaped_db = escape(database_name)
     escaped_table = escape(catalog_entry.table)
-    escaped_columns = [escape(c) for c in columns]
+    mapped_columns = map_sql_columns(catalog_entry, columns)
 
     select_sql = "SELECT {} FROM {}.{}".format(
-        ",".join(escaped_columns), escaped_db, escaped_table
+        ",".join(mapped_columns), escaped_db, escaped_table
     )
 
     # escape percent signs
@@ -108,10 +124,16 @@ def row_to_singer_record(
         # property_type = catalog_entry.schema.properties[columns[idx]].type
         property_type = md_map.get(("properties", columns[idx])).get("sql-datatype")
         if isinstance(elem, datetime.datetime):
-            row_to_persist += (elem.isoformat() + "+00:00",)
+            if elem.tzinfo:
+                row_to_persist += (elem.isoformat(),)
+            else:
+                row_to_persist += (elem.isoformat() + "+00:00",)
 
         elif isinstance(elem, datetime.date):
             row_to_persist += (elem.isoformat() + "T00:00:00+00:00",)
+
+        elif isinstance(elem, datetime.time):
+            row_to_persist += (elem.isoformat() + "+00:00",)
 
         elif isinstance(elem, datetime.timedelta):
             epoch = datetime.datetime.utcfromtimestamp(0)
