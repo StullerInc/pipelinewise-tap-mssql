@@ -1,3 +1,6 @@
+.secrets
+*.env
+
 # Visual Studio Code
 .vscode/
 
