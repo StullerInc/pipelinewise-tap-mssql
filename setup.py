@@ -24,7 +24,8 @@ setup(
         "sqlalchemy~=1.4.31",
         "pyodbc==4.0.32",
         "backoff==1.8.0",
-        "jinja2~=2.11.3",
+        "MarkupSafe==2.0.1",
+        "jinja2==2.11.3",
     ],
     extras_require={
         'test': [
