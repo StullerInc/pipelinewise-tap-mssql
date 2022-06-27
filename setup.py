@@ -7,7 +7,7 @@ long_description = (this_directory / "README.md").read_text()
 
 setup(
     name="firebend-tap-mssql",
-    version="1.0.4",
+    version="1.0.5",
     description="Singer.io tap for extracting data from SQL Server - PipelineWise compatible",
     long_description=long_description,
     long_description_content_type='text/markdown',
