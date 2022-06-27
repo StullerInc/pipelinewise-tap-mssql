@@ -64,6 +64,7 @@ Create a config file containing the database connection credentials, e.g.:
 ```json
 {
   "host": "localhost",
+  "database": "db",
   "port": "3306",
   "user": "root",
   "password": "password",
