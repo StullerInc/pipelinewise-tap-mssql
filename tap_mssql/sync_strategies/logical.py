@@ -23,13 +23,15 @@ BOOKMARK_KEYS = {
     "initial_full_table_complete",
 }
 
+class LogVersionExpired(Exception):
+    pass
 
 class log_based_sync:
     """
     Methods to validate the log-based sync of a table from mssql
     """
 
-    def __init__(self, mssql_conn, config, catalog_entry, state, columns):
+    def __init__(self, mssql_conn, config, catalog_entry, state, columns, no_catchup):
         self.logger = singer.get_logger()
         self.config = config
         self.catalog_entry = catalog_entry
@@ -39,6 +41,7 @@ class log_based_sync:
         self.schema_name = common.get_database_name(self.catalog_entry)
         self.table_name = catalog_entry.table
         self.mssql_conn = mssql_conn
+        self.no_catchup = no_catchup
 
     def assert_log_based_is_enabled(self):
         database_is_change_tracking_enabled = self._get_change_tracking_database()
@@ -148,7 +151,6 @@ class log_based_sync:
         initial_full_table_complete = singer.get_bookmark(
             self.state, self.catalog_entry.tap_stream_id, "initial_full_table_complete"
         )
-
         if initial_full_table_complete is None:
             self.logger.info("Setting new current log version from db.")
 
@@ -186,7 +188,15 @@ class log_based_sync:
         "Determine if we should run a full load of the table or use state."
 
         min_valid_version = self._get_min_valid_version()
-
+        # no_catchup flag means we will never run a full load and we will error out if
+        #  current log version is below the min valid version
+        self.logger.info(f'Current Log Version: {self.current_log_version}')
+        if self.no_catchup:
+            if self.current_log_version is None:
+                self.current_log_version = self._get_current_log_version()
+            if self.current_log_version < min_valid_version:
+                raise LogVersionExpired('LogVersionExpired')
+            return False
         if (
             self.current_log_version is None or not self.initial_full_table_complete
         ):  # prevents the operator in the else statement from erroring if None
@@ -195,12 +205,13 @@ class log_based_sync:
                 "No previous valid state found, executing a full table sync."
             )
             return True
+        
         else:
             min_version_out_of_date = min_valid_version > self.current_log_version
 
             if (
-                self.initial_full_table_complete == True
-                and min_version_out_of_date == True
+                self.initial_full_table_complete
+                and min_version_out_of_date
             ):
                 self.logger.info(
                     "CHANGE_TRACKING_MIN_VALID_VERSION has reported a value greater than current-log-version. Executing a full table sync."

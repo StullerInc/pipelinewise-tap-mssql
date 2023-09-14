@@ -526,13 +526,14 @@ def do_sync_log_based_table(mssql_conn, config, catalog_entry, state, columns, n
 
     key_properties = common.get_key_properties(catalog_entry)
     state = singer.set_currently_syncing(state, catalog_entry.tap_stream_id)
+    logger.info(f'state: {state}')
     write_schema_message(config, catalog_entry)
 
     stream_version = common.get_stream_version(catalog_entry.tap_stream_id, state)
 
     # initial instance of log_based connector class
     log_based = logical.log_based_sync(
-        mssql_conn, config, catalog_entry, state, columns
+        mssql_conn, config, catalog_entry, state, columns, no_catchup
     )
 
     # assert all of the log_based prereq's are met
