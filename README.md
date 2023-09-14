@@ -1,5 +1,8 @@
 # pipelinewise-tap-mssql
 
+This is a fork from [Firebend](https://github.com/firebend/pipelinewise-tap-mssql) repo, which is also a fork, as you'll find below in the unmodified readme. The reason for the fork is that I wanted to be able to use change tracking with the Microsoft SQL server, but not have to pull in the whole table. I have added an extra flag that will do two things. First, when initialized with no state, it will start with the most recent change version. Second, if the change version gets out of sync, it will simply error out. What is then done is up to you. For my usecase, I knew the event data base would not be getting updates to old data, so a simple incremental load of the last week would get it caught up. The following readme sections are all verbatim from the firebend github page.
+
+
 [Singer](https://www.singer.io/) tap that extracts data from a [mssql](https://www.mssql.com/) database and produces JSON-formatted data following the [Singer spec](https://github.com/singer-io/getting-started/blob/master/docs/SPEC.md).
 
 This is a fork from a [PipelineWise](https://transferwise.github.io/pipelinewise) compatible tap connector to add a log_based replication method for use with [Change Tracking](https://docs.microsoft.com/en-us/sql/relational-databases/track-changes/about-change-tracking-sql-server).
