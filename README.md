@@ -34,9 +34,30 @@ To use LOG_BASED replication with this new feature set simply add the no-catchup
     ]
 }
 ```
+Here is an example of the error that gets thrown if the change tracking log version is too old:
+```
+CRITICAL LogVersionExpired
+Traceback (most recent call last):
+  File "/Users/matthewforeman/externalstuff/pipelinewise-tap-mssql/.venv/bin/tap-mssql", line 8, in <module>
+    sys.exit(main())
+  File "/Users/matthewforeman/externalstuff/pipelinewise-tap-mssql/tap_mssql/__init__.py", line 700, in main
+    raise exc
+  File "/Users/matthewforeman/externalstuff/pipelinewise-tap-mssql/tap_mssql/__init__.py", line 697, in main
+    main_impl()
+  File "/Users/matthewforeman/externalstuff/pipelinewise-tap-mssql/tap_mssql/__init__.py", line 686, in main_impl
+    do_sync(mssql_conn, args.config, args.catalog, state)
+  File "/Users/matthewforeman/externalstuff/pipelinewise-tap-mssql/tap_mssql/__init__.py", line 657, in do_sync
+    sync_non_binlog_streams(mssql_conn, non_binlog_catalog, config, state)
+  File "/Users/matthewforeman/externalstuff/pipelinewise-tap-mssql/tap_mssql/__init__.py", line 640, in sync_non_binlog_streams
+    do_sync_log_based_table(
+  File "/Users/matthewforeman/externalstuff/pipelinewise-tap-mssql/tap_mssql/__init__.py", line 562, in do_sync_log_based_table
+    initial_load = log_based.log_based_initial_full_table()
+  File "/Users/matthewforeman/externalstuff/pipelinewise-tap-mssql/tap_mssql/sync_strategies/logical.py", line 198, in log_based_initial_full_table
+    raise LogVersionExpired('LogVersionExpired')
+tap_mssql.sync_strategies.logical.LogVersionExpired: LogVersionExpired
+```
 
-
-The following readme sections are all verbatim from the firebend github page.
+## The following readme sections are all verbatim from the firebend github page.
 
 
 [Singer](https://www.singer.io/) tap that extracts data from a [mssql](https://www.mssql.com/) database and produces JSON-formatted data following the [Singer spec](https://github.com/singer-io/getting-started/blob/master/docs/SPEC.md).
