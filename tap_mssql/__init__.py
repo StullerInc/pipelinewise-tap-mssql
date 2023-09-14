@@ -388,7 +388,7 @@ def get_non_binlog_streams(mssql_conn, catalog, config, state):
     """Returns the Catalog of data we're going to sync for all SELECT-based
     streams (i.e. INCREMENTAL, FULL_TABLE, and LOG_BASED that require a historical
     sync). LOG_BASED streams that require a historical sync are inferred from lack
-    of any state.
+    of any state, unless the no-catchup flag is provided.
 
     Using the Catalog provided from the input file, this function will return a
     Catalog representing exactly which tables and columns that will be emitted
@@ -522,7 +522,7 @@ def do_sync_full_table(mssql_conn, config, catalog_entry, state, columns):
     singer.write_message(singer.StateMessage(value=copy.deepcopy(state)))
 
 
-def do_sync_log_based_table(mssql_conn, config, catalog_entry, state, columns):
+def do_sync_log_based_table(mssql_conn, config, catalog_entry, state, columns, no_catchup):
 
     key_properties = common.get_key_properties(catalog_entry)
     state = singer.set_currently_syncing(state, catalog_entry.tap_stream_id)
@@ -560,7 +560,14 @@ def do_sync_log_based_table(mssql_conn, config, catalog_entry, state, columns):
 
     initial_load = log_based.log_based_initial_full_table()
 
-    if initial_load:
+    state = singer.write_bookmark(
+        state,
+        catalog_entry.tap_stream_id,
+        "no_catchup",
+        no_catchup
+    )
+    
+    if initial_load and not no_catchup:
         do_sync_full_table(mssql_conn, config, catalog_entry, state, columns)
         state = singer.write_bookmark(
             state, catalog_entry.tap_stream_id, "initial_full_table_complete", True
@@ -599,6 +606,7 @@ def sync_non_binlog_streams(mssql_conn, non_binlog_catalog, config, state):
         replication_method = md_map.get((), {}).get("replication-method")
         replication_key = md_map.get((), {}).get("replication-key")
         primary_keys = md_map.get((), {}).get("table-key-properties")
+        no_catchup = md_map.get((), {}).get("no-catchup", False)
         LOGGER.info(f"Table {catalog_entry.table} proposes {replication_method} sync")
         if replication_method == "INCREMENTAL" and not replication_key:
             LOGGER.info(
@@ -629,7 +637,7 @@ def sync_non_binlog_streams(mssql_conn, non_binlog_catalog, config, state):
                     f"syncing {catalog_entry.table} using replication method LOG_BASED"
                 )
                 do_sync_log_based_table(
-                    mssql_conn, config, catalog_entry, state, columns
+                    mssql_conn, config, catalog_entry, state, columns, no_catchup
                 )
             else:
                 raise Exception(

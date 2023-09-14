@@ -1,6 +1,42 @@
 # pipelinewise-tap-mssql
 
-This is a fork from [Firebend](https://github.com/firebend/pipelinewise-tap-mssql) repo, which is also a fork, as you'll find below in the unmodified readme. The reason for the fork is that I wanted to be able to use change tracking with the Microsoft SQL server, but not have to pull in the whole table. I have added an extra flag that will do two things. First, when initialized with no state, it will start with the most recent change version. Second, if the change version gets out of sync, it will simply error out. What is then done is up to you. For my usecase, I knew the event data base would not be getting updates to old data, so a simple incremental load of the last week would get it caught up. The following readme sections are all verbatim from the firebend github page.
+FYI: this only works with python 3.10. Python 3.11 will not build the wheel for pyodbc
+
+This is a fork from [Firebend](https://github.com/firebend/pipelinewise-tap-mssql) repo, which is also a fork, as you'll find below in the unmodified readme. The reason for the fork is that I wanted to be able to use change tracking with the Microsoft SQL server, but not have to pull in the whole table. I have added an extra flag that will do two things. First, when initialized with no state, it will start with the most recent change version. Second, if the change version gets out of sync, it will simply error out. What is then done is up to you. For my usecase, I knew the event data base would not be getting updates to old data, so a simple incremental load of the last week would get it caught up. 
+
+To use LOG_BASED replication with this new feature set simply add the no-catchup flag set to true to the metadata of the tap stream
+```json
+{
+    "streams": [
+        {
+            "tap_stream_id": "dbo-Event",
+            "table_name": "Event",
+            ...
+            "metadata": [
+                {
+                    "breadcrumb": [],
+                    "metadata": {
+                        "selected-by-default": false,
+                        "database-name": "dbo",
+                        "is-view": false,
+                        "table-key-properties": [
+                            "EventId"
+                        ],
+                        "selected": true,
+                        "replication-method": "LOG_BASED",
+                        "no-catchup": true
+                    }
+                },
+                ...
+            ]
+        },
+    ...
+    ]
+}
+```
+
+
+The following readme sections are all verbatim from the firebend github page.
 
 
 [Singer](https://www.singer.io/) tap that extracts data from a [mssql](https://www.mssql.com/) database and produces JSON-formatted data following the [Singer spec](https://github.com/singer-io/getting-started/blob/master/docs/SPEC.md).

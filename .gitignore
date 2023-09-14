@@ -137,3 +137,4 @@ dmypy.json
 # config
 config.json
 catalog.json
+state.json
